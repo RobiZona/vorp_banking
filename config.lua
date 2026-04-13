@@ -2,16 +2,6 @@ Config                    = {}
 
 Config.Lang               = "English"
 
-Config.WithdrawLogWebhook = ""
-
-Config.DepositLogWebhook  = ""
-
-Config.TransferLogWebhook = ""
-
-Config.TakeLogWebhook     = ""
-
-Config.MoveLogWebhook     = ""
-
 Config.Key                = 0x760A9C6F -- [G]
 
 Config.banktransfer       = true       -- If you want to use bank transfer

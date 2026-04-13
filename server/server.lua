@@ -11,7 +11,7 @@ local function registerStorage(bankName, bankId, invspace)
             acceptWeapons = Config.banks[bankName].canStoreWeapons,
             shared = true,
             ignoreItemStackLimit = true,
-            webhook = "", -- add here your webhook url for discord logging
+            webhook = Config.CustomInventoryWebhook, -- add here your webhook url for discord logging
         }
         exports.vorp_inventory:registerInventory(data)
         Wait(200)
@@ -125,16 +125,13 @@ DiscordLogs = function(transactionAmount, bankName, playerName, transactionType,
 
     if transactionType == "withdraw" then
         webhookURL = Config.WithdrawLogWebhook
-        logMessage = string.format(T.Webhooks.WithdrawLogDescription, playerName, transactionAmount .. currencySymbol,
-            bankName)
+        logMessage = string.format(T.Webhooks.WithdrawLogDescription, playerName, transactionAmount .. currencySymbol, bankName)
     elseif transactionType == "deposit" then
         webhookURL = Config.DepositLogWebhook
-        logMessage = string.format(T.Webhooks.DepositLogDescription, playerName, transactionAmount .. currencySymbol,
-            bankName)
+        logMessage = string.format(T.Webhooks.DepositLogDescription, playerName, transactionAmount .. currencySymbol, bankName)
     elseif transactionType == "transfer" then
         webhookURL = Config.TransferLogWebhook
-        logMessage = string.format(T.Webhooks.TransferLogDescription, playerName, transactionAmount .. currencySymbol,
-            bankName, targetBankName)
+        logMessage = string.format(T.Webhooks.TransferLogDescription, playerName, transactionAmount .. currencySymbol, bankName, targetBankName)
     elseif transactionType == "take" then
         webhookURL = Config.TakeLogWebhook
         logMessage = string.format(T.Webhooks.TakeLogDescription, playerName, transactionAmount, itemName, bankName)

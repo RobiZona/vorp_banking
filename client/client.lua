@@ -21,13 +21,12 @@ AddEventHandler("onResourceStop", function(resourceName)
         end
         DisplayRadar(true)
         MenuData.CloseAll()
-        inmenu = false
-        ClearPedTasks(PlayerPedId())
+        ClearPedTasks(PlayerPedId(), true, true)
     end
 end)
 
 ---------------- BLIPS ---------------------
-local function AddBlip(index)
+local function addBlip(index)
     if Config.banks[index].blipAllowed then
         local blip = BlipAddForCoords(1664425300, Config.banks[index].BankLocation.x, Config.banks[index].BankLocation.y, Config.banks[index].BankLocation.z)
         SetBlipSprite(blip, Config.banks[index].blipsprite, true)
@@ -38,16 +37,16 @@ local function AddBlip(index)
 end
 
 ---------------- NPC ---------------------
-local function LoadModel(model)
+local function loadModel(model)
     if not HasModelLoaded(model) then
         RequestModel(model, false)
         repeat Wait(0) until HasModelLoaded(model)
     end
 end
 
-local function SpawnNPC(index)
+local function spawnNPC(index)
     local v = Config.banks[index]
-    LoadModel(v.NpcModel)
+    loadModel(v.NpcModel)
     local npc = CreatePed(joaat(v.NpcModel), v.NpcPosition.x, v.NpcPosition.y, v.NpcPosition.z, v.NpcPosition.h, false, false, false, false)
     repeat Wait(0) until DoesEntityExist(npc)
     PlaceEntityOnGroundProperly(npc, true)
@@ -61,7 +60,7 @@ local function SpawnNPC(index)
     Config.banks[index].NPC = npc
 end
 
-local function PromptSetUp()
+local function promptSetUp()
     local str = T.openmenu
     openmenu = UiPromptRegisterBegin()
     UiPromptSetControlAction(openmenu, Config.Key)
@@ -74,7 +73,7 @@ local function PromptSetUp()
     UiPromptRegisterEnd(openmenu)
 end
 
-local function PromptSetUp2()
+local function promptSetUp2()
     local str = T.closemenu
     CloseBanks = UiPromptRegisterBegin()
     UiPromptSetControlAction(CloseBanks, Config.Key)
@@ -93,23 +92,23 @@ local function getDistance(config)
     return #(coords - coords2)
 end
 
-local function CreateNpcByDistance(distance, index)
+local function createNpcByDistance(distance, index)
     if Config.banks[index].NpcAllowed then
-    if distance <= 40 then
-        if not Config.banks[index].NPC then
-            SpawnNPC(index)
+        if distance <= 40 then
+            if not Config.banks[index].NPC then
+                spawnNPC(index)
+            end
+        else
+            if Config.banks[index].NPC then
+                SetEntityAsNoLongerNeeded(Config.banks[index].NPC)
+                DeleteEntity(Config.banks[index].NPC)
+                Config.banks[index].NPC = nil
+            end
         end
-    else
-        if Config.banks[index].NPC then
-            SetEntityAsNoLongerNeeded(Config.banks[index].NPC)
-            DeleteEntity(Config.banks[index].NPC)
-            Config.banks[index].NPC = nil
-        end
-    end
     end
 end
 
-local function GetBankInfo(bankConfig)
+local function getBankInfo(bankConfig)
     local result = VORPcore.Callback.TriggerAwait("vorp_bank:getinfo", bankConfig.city)
     Openbank(bankConfig.city, result[1], result[2])
     TaskStandStill(PlayerPedId(), -1)
@@ -117,9 +116,9 @@ local function GetBankInfo(bankConfig)
 end
 
 CreateThread(function()
-    repeat Wait(2000) until LocalPlayer.state.IsInSession
-    PromptSetUp()
-    PromptSetUp2()
+    repeat Wait(5000) until LocalPlayer.state.IsInSession
+    promptSetUp()
+    promptSetUp2()
 
     while true do
         local sleep = 1000
@@ -132,7 +131,7 @@ CreateThread(function()
                     local hour = GetClockHours()
                     if hour >= bankConfig.StoreClose or hour < bankConfig.StoreOpen then
                         if not Config.banks[index].BlipHandle and bankConfig.blipAllowed then
-                            AddBlip(index)
+                            addBlip(index)
                         end
 
                         if Config.banks[index].BlipHandle then
@@ -160,7 +159,7 @@ CreateThread(function()
                         end
                     elseif hour >= bankConfig.StoreOpen then
                         if not Config.banks[index].BlipHandle and bankConfig.blipAllowed then
-                            AddBlip(index)
+                            addBlip(index)
                         end
 
                         if Config.banks[index].BlipHandle then
@@ -168,7 +167,7 @@ CreateThread(function()
                         end
 
                         local distance = getDistance(bankConfig.BankLocation)
-                        CreateNpcByDistance(distance, index)
+                        createNpcByDistance(distance, index)
                         if distance <= bankConfig.distOpen then
                             sleep = 0
 
@@ -177,17 +176,17 @@ CreateThread(function()
 
                             if UiPromptHasStandardModeCompleted(openmenu, 0) then
                                 inmenu = true
-                                GetBankInfo(bankConfig)
+                                getBankInfo(bankConfig)
                             end
                         end
                     end
                 else
                     local distance = getDistance(bankConfig.BankLocation)
                     if not Config.banks[index].BlipHandle and bankConfig.blipAllowed then
-                        AddBlip(index)
+                        addBlip(index)
                     end
 
-                    CreateNpcByDistance(distance, index)
+                    createNpcByDistance(distance, index)
 
                     if distance <= bankConfig.distOpen then
                         sleep = 0
@@ -196,7 +195,7 @@ CreateThread(function()
 
                         if UiPromptHasStandardModeCompleted(openmenu, 0) then
                             inmenu = true
-                            GetBankInfo(bankConfig)
+                            getBankInfo(bankConfig)
                         end
                     end
                 end
@@ -206,7 +205,7 @@ CreateThread(function()
     end
 end)
 
-local function CloseMenu()
+local function closeMenu()
     MenuData.CloseAll()
     inmenu = false
     ClearPedTasks(PlayerPedId())
@@ -216,7 +215,7 @@ end
 function Openbank(bankName, bankinfo, allbanks)
     MenuData.CloseAll()
     if not bankinfo.money then
-        CloseMenu()
+        closeMenu()
         return
     end
 
@@ -297,7 +296,7 @@ function Openbank(bankName, bankinfo, allbanks)
                     local result = tonumber(cb)
                     if result ~= nil and result > 0 then
                         TriggerServerEvent("vorp_bank:depositcash", result, Config.banks[bankName].city, bankinfo)
-                        CloseMenu()
+                        closeMenu()
                     else
                         VORPcore.NotifyRightTip(T.invalid, 4000)
                     end
@@ -323,7 +322,7 @@ function Openbank(bankName, bankinfo, allbanks)
                     local result = tonumber(cb)
                     if result ~= nil and result > 0 then
                         TriggerServerEvent("vorp_bank:depositgold", result, Config.banks[bankName].city, bankinfo)
-                        CloseMenu()
+                        closeMenu()
                     else
                         VORPcore.NotifyRightTip(T.invalid, 4000)
                     end
@@ -349,7 +348,7 @@ function Openbank(bankName, bankinfo, allbanks)
                     local result = tonumber(cb)
                     if result ~= nil and result > 0 then
                         TriggerServerEvent("vorp_bank:withcash", result, Config.banks[bankName].city, bankinfo)
-                        CloseMenu()
+                        closeMenu()
                     else
                         VORPcore.NotifyRightTip(T.invalid, 4000)
                     end
@@ -375,7 +374,7 @@ function Openbank(bankName, bankinfo, allbanks)
                     local result = tonumber(cb)
                     if result ~= nil and result > 0 then
                         TriggerServerEvent("vorp_bank:withgold", result, Config.banks[bankName].city, bankinfo)
-                        CloseMenu()
+                        closeMenu()
                     else
                         VORPcore.NotifyRightTip(T.invalid, 4000)
                     end
@@ -384,7 +383,7 @@ function Openbank(bankName, bankinfo, allbanks)
             if (data.current.value == 'bitem') then
                 if bankinfo.invspace > 0 then
                     TriggerServerEvent("vorp_banking:server:OpenBankInventory", bankName)
-                    CloseMenu()
+                    closeMenu()
                 else
                     VORPcore.NotifyRightTip(" you need to buy slots first", 4000)
                 end
@@ -411,7 +410,7 @@ function Openbank(bankName, bankinfo, allbanks)
                     local result = tonumber(cb)
                     if result ~= nil and result > 0 then
                         TriggerServerEvent("vorp_bank:UpgradeSafeBox", math.floor(result), invspace, bankName)
-                        CloseMenu()
+                        closeMenu()
                     else
                         VORPcore.NotifyRightTip(T.invalid, 4000)
                     end
@@ -422,7 +421,7 @@ function Openbank(bankName, bankinfo, allbanks)
             end
         end,
         function()
-            CloseMenu()
+            closeMenu()
         end)
 end
 
